@@ -1,11 +1,17 @@
 openapi: 3.1.0
 info:
-  title: Bike Rental API
+  title: API de Renta de Bicicletas
+  description: Adaptador HTTP de referencia (hexagonal) del caso de uso **crear renta
+    multi-bicicleta** (UC-01). Los adaptadores de salida son en memoria; el dominio
+    no depende de este framework.
   version: 0.1.0
 paths:
   /rentals:
     post:
-      summary: Create Rental Endpoint
+      summary: Crear renta de varias bicicletas
+      description: Crea una renta atómica de una o varias bicicletas de una estación
+        (UC-01). Si una bicicleta no está disponible o el pago es rechazado, no se
+        renta ninguna ni se cobra (RN-05).
       operationId: create_rental_endpoint_rentals_post
       requestBody:
         content:
@@ -15,38 +21,40 @@ paths:
         required: true
       responses:
         '201':
-          description: Successful Response
+          description: Renta creada y activa
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RentalResponse'
         '402':
-          description: Payment Required
+          description: Pago rechazado por la pasarela
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Not Found
+          description: Bicicleta o estación inexistente
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Conflict
+          description: 'Conflicto: bicicleta no disponible, ya rentada o tarifa inactiva'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: Unprocessable Entity
+          description: Entrada inválida o regla de negocio (lista vacía / bicicletas
+            duplicadas)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /health:
     get:
-      summary: Health Endpoint
+      summary: Estado del servicio
+      description: Verifica que el servicio responde (sin tocar el dominio).
       operationId: health_endpoint_health_get
       responses:
         '200':
@@ -63,10 +71,12 @@ components:
           type: string
           format: uuid
           title: User Id
+          description: Identificador del cliente que renta
         station_id:
           type: string
           format: uuid
           title: Station Id
+          description: Estación de origen de la renta
         bicycle_ids:
           items:
             type: string
@@ -74,6 +84,7 @@ components:
           type: array
           minItems: 1
           title: Bicycle Ids
+          description: Bicicletas a rentar (al menos una)
       additionalProperties: false
       type: object
       required:
@@ -81,60 +92,66 @@ components:
       - station_id
       - bicycle_ids
       title: CreateRentalRequest
-      description: 'Body of ``POST /rentals`` (HU-05/HU-07).
+      description: 'Cuerpo de ``POST /rentals`` (HU-05/HU-07).
 
 
-        Pydantic validates UUID syntax (malformed -> 422) and enforces a non-empty
+        Pydantic valida la sintaxis de los UUID (malformado → 422) y exige una lista
 
-        bicycle list at the edge (``min_length=1``); the domain still raises
+        de bicicletas no vacía en el borde (``min_length=1``); el dominio además lanza
 
-        ``EmptyRentalError`` as a safety net. ``extra=''forbid''`` rejects unknown
+        ``EmptyRentalError`` como red de seguridad. ``extra=''forbid''`` rechaza campos
 
-        fields at the boundary.'
+        desconocidos en la frontera.'
     ErrorResponse:
       properties:
         error:
           type: string
           title: Error
+          description: Nombre del error de dominio
         detail:
           type: string
           title: Detail
+          description: Mensaje legible del error
       type: object
       required:
       - error
       - detail
       title: ErrorResponse
-      description: 'Uniform error body. ``error`` is the stable domain error name;
-        ``detail``
+      description: 'Cuerpo uniforme de error. ``error`` es el nombre estable del error
+        de
 
-        is a human-readable message — never a stack trace.'
+        dominio; ``detail`` es un mensaje legible — nunca una traza de error.'
     HealthResponse:
       properties:
         status:
           type: string
           title: Status
+          description: Estado del servicio, p. ej. 'ok'
       type: object
       required:
       - status
       title: HealthResponse
-      description: Body of ``GET /health`` (HU-08).
+      description: 'Cuerpo de ``GET /health`` (HU-08): estado del servicio.'
     RentalResponse:
       properties:
         rental_id:
           type: string
           format: uuid
           title: Rental Id
+          description: Identificador de la renta creada
         payment_id:
           type: string
           format: uuid
           title: Payment Id
+          description: Identificador del pago autorizado
         status:
           type: string
           title: Status
+          description: Estado de la renta (p. ej. 'activa')
       type: object
       required:
       - rental_id
       - payment_id
       - status
       title: RentalResponse
-      description: Success body of ``POST /rentals`` (201).
+      description: 'Respuesta de éxito de ``POST /rentals`` (201): la renta creada.'

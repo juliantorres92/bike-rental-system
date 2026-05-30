@@ -18,38 +18,40 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class CreateRentalRequest(BaseModel):
-    """Body of ``POST /rentals`` (HU-05/HU-07).
+    """Cuerpo de ``POST /rentals`` (HU-05/HU-07).
 
-    Pydantic validates UUID syntax (malformed -> 422) and enforces a non-empty
-    bicycle list at the edge (``min_length=1``); the domain still raises
-    ``EmptyRentalError`` as a safety net. ``extra='forbid'`` rejects unknown
-    fields at the boundary.
+    Pydantic valida la sintaxis de los UUID (malformado → 422) y exige una lista
+    de bicicletas no vacía en el borde (``min_length=1``); el dominio además lanza
+    ``EmptyRentalError`` como red de seguridad. ``extra='forbid'`` rechaza campos
+    desconocidos en la frontera.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    user_id: UUID
-    station_id: UUID
-    bicycle_ids: List[UUID] = Field(min_length=1)
+    user_id: UUID = Field(description="Identificador del cliente que renta")
+    station_id: UUID = Field(description="Estación de origen de la renta")
+    bicycle_ids: List[UUID] = Field(
+        min_length=1, description="Bicicletas a rentar (al menos una)"
+    )
 
 
 class RentalResponse(BaseModel):
-    """Success body of ``POST /rentals`` (201)."""
+    """Respuesta de éxito de ``POST /rentals`` (201): la renta creada."""
 
-    rental_id: UUID
-    payment_id: UUID
-    status: str
+    rental_id: UUID = Field(description="Identificador de la renta creada")
+    payment_id: UUID = Field(description="Identificador del pago autorizado")
+    status: str = Field(description="Estado de la renta (p. ej. 'activa')")
 
 
 class ErrorResponse(BaseModel):
-    """Uniform error body. ``error`` is the stable domain error name; ``detail``
-    is a human-readable message — never a stack trace."""
+    """Cuerpo uniforme de error. ``error`` es el nombre estable del error de
+    dominio; ``detail`` es un mensaje legible — nunca una traza de error."""
 
-    error: str
-    detail: str
+    error: str = Field(description="Nombre del error de dominio")
+    detail: str = Field(description="Mensaje legible del error")
 
 
 class HealthResponse(BaseModel):
-    """Body of ``GET /health`` (HU-08)."""
+    """Cuerpo de ``GET /health`` (HU-08): estado del servicio."""
 
-    status: str
+    status: str = Field(description="Estado del servicio, p. ej. 'ok'")

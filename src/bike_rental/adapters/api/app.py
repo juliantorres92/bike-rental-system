@@ -59,7 +59,15 @@ def create_app(world: Optional[InMemoryWorld] = None) -> FastAPI:
     if world is None:
         world = InMemoryWorld.with_defaults()
 
-    app = FastAPI(title="Bike Rental API", version="0.1.0")
+    app = FastAPI(
+        title="API de Renta de Bicicletas",
+        version="0.1.0",
+        description=(
+            "Adaptador HTTP de referencia (hexagonal) del caso de uso "
+            "**crear renta multi-bicicleta** (UC-01). Los adaptadores de salida "
+            "son en memoria; el dominio no depende de este framework."
+        ),
+    )
     app.state.world = world
     install_error_handlers(app)
 
@@ -67,11 +75,24 @@ def create_app(world: Optional[InMemoryWorld] = None) -> FastAPI:
         "/rentals",
         status_code=201,
         response_model=RentalResponse,
+        summary="Crear renta de varias bicicletas",
+        description=(
+            "Crea una renta atómica de una o varias bicicletas de una estación "
+            "(UC-01). Si una bicicleta no está disponible o el pago es rechazado, "
+            "no se renta ninguna ni se cobra (RN-05)."
+        ),
         responses={
-            402: {"model": ErrorResponse},
-            404: {"model": ErrorResponse},
-            409: {"model": ErrorResponse},
-            422: {"model": ErrorResponse},
+            201: {"description": "Renta creada y activa"},
+            402: {"model": ErrorResponse, "description": "Pago rechazado por la pasarela"},
+            404: {"model": ErrorResponse, "description": "Bicicleta o estación inexistente"},
+            409: {
+                "model": ErrorResponse,
+                "description": "Conflicto: bicicleta no disponible, ya rentada o tarifa inactiva",
+            },
+            422: {
+                "model": ErrorResponse,
+                "description": "Entrada inválida o regla de negocio (lista vacía / bicicletas duplicadas)",
+            },
         },
     )
     def create_rental_endpoint(
@@ -94,7 +115,12 @@ def create_app(world: Optional[InMemoryWorld] = None) -> FastAPI:
             status=result.status.value,
         )
 
-    @app.get("/health", response_model=HealthResponse)
+    @app.get(
+        "/health",
+        response_model=HealthResponse,
+        summary="Estado del servicio",
+        description="Verifica que el servicio responde (sin tocar el dominio).",
+    )
     def health_endpoint() -> HealthResponse:
         # HU-08: no domain dependency; just proves the service responds.
         return HealthResponse(status="ok")
