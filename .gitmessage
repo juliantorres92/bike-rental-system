@@ -1,0 +1,19 @@
+# <type>(<scope>): <descripción en imperativo, minúscula, sin punto final>
+# └ máx ~50 caracteres ─────────────────────────────────────┘
+
+# Cuerpo: explica el PORQUÉ del cambio, no el qué (el diff ya dice el qué).
+# Ajusta a ~72 columnas. Deja una línea en blanco tras el asunto.
+
+# Footer (opcional): BREAKING CHANGE:, refs #issue, Co-Authored-By:
+
+# ── Tipos ─────────────────────────────────────────────────────────────
+#   feat      Nueva funcionalidad
+#   fix       Corrección de bug
+#   refactor  Cambio que no añade feature ni corrige bug
+#   test      Añadir o actualizar pruebas
+#   docs      Solo documentación
+#   chore     Tooling, dependencias, configuración
+#   perf      Mejora de rendimiento
+#   ci        Pipelines de integración / despliegue
+#
+# Regla de oro: un commit = una cosa lógica. Ver CONTRIBUTING.md
