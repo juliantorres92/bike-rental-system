@@ -22,9 +22,10 @@ Se usa una variante ligera de [MADR](https://adr.github.io/madr/) (Markdown Any 
 | [0006](0006-estrategia-de-concurrencia.md) | Concurrencia: control optimista + reserva con expiración | aceptado | C-03, NFR-02 |
 | [0007](0007-modelo-de-pago-e-idempotencia.md) | Modelo de pago: un Pago por Renta, idempotencia y saga de compensación | aceptado | C-06, RN-19, RN-20 |
 | [0008](0008-estilo-de-arquitectura.md) | Estilo de arquitectura: monolito modular hexagonal | aceptado | NFR-01, NFR-02, [arquitectura](../arquitectura.md) |
+| [0009](0009-stack-tecnologico.md) | Stack: Python + FastAPI + SQLAlchemy + PostgreSQL | aceptado | [stack](../stack.md), ADR-0008 |
 
 ## Decisiones diferidas
 
-- **Materialización física de enums** (tipo nativo vs `CHECK` sobre `TEXT` vs tabla de catálogo): depende del motor de base de datos; se decidirá en el futuro **ADR de stack tecnológico**.
+- ~~**Materialización física de enums**~~ — resuelto en [ADR-0009](0009-stack-tecnologico.md): tipos `ENUM` nativos de PostgreSQL (o `CHECK` sobre `TEXT`).
 - **Estilo de arquitectura, capas y despliegue**: se tratará en el documento de arquitectura técnica (pieza posterior) y sus ADRs asociados.
 - **Políticas de negocio abiertas** de la spec §8 que no son estructurales (C-02 degradación de renta, C-05 cargo por reubicación, C-07 estación llena, C-09 timeout de renta): se resolverán como ADRs de política cuando se prioricen; hoy quedan con la recomendación tentativa de la spec.
