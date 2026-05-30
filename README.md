@@ -8,3 +8,4 @@ Sistema de renta de bicicletas — Especificaciones, arquitectura y stack tecnol
 - [Arquitectura técnica](docs/arquitectura.md) — estilo, diagramas C4 (contexto, contenedores, componentes) y cómo las decisiones se reflejan en la estructura.
 - [Stack tecnológico](docs/stack.md) — lenguaje, framework, ORM y motor de BD con su justificación y trade-offs.
 - [Decisiones de arquitectura (ADRs)](docs/adr/) — registro de las decisiones técnicas con su contexto, alternativas y consecuencias.
+- [Proceso de construcción con IA](docs/proceso-con-ia.md) — cómo se usó la IA como herramienta profesional: método, verificación y criterio.
