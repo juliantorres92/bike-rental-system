@@ -8,7 +8,7 @@
 
 ## 1. Propósito y alcance
 
-Describe **cómo se estructura el sistema** para cumplir la especificación funcional con las decisiones ya tomadas en los ADRs. Usa el modelo [C4](https://c4model.com/) en sus tres primeros niveles (contexto, contenedores, componentes). Se mantiene **agnóstico del stack concreto**: el lenguaje, framework y motor de base de datos se justifican en el documento de stack (pieza posterior) y su ADR. Aquí se decide la *forma* (estilo, límites, responsabilidades), no las *herramientas*.
+Describe **cómo se estructura el sistema** para cumplir la especificación funcional con las decisiones ya tomadas en los ADRs. Usa el modelo [C4](https://c4model.com/) en sus tres primeros niveles (contexto, contenedores, componentes). Se mantiene **agnóstico del stack concreto**: el lenguaje, framework y motor de base de datos se justifican en el [documento de stack](stack.md) y su [ADR-0009](adr/0009-stack-tecnologico.md). Aquí se decide la *forma* (estilo, límites, responsabilidades), no las *herramientas*.
 
 **Fuera de alcance:** detalle de despliegue específico de nube, dimensionamiento, CI/CD, y el código (la rebanada de implementación, si se hace, es posterior).
 
