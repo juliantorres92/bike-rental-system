@@ -52,9 +52,12 @@ Adaptador de entrada que expone `CreateRental` por HTTP (`src/bike_rental/adapte
 con los adaptadores de salida en memoria. El dominio no cambia ni importa FastAPI.
 
 ```bash
-.venv/bin/pip install -e ".[api]"     # fastapi, httpx, uvicorn
+.venv/bin/pip install fastapi httpx uvicorn    # deps del adaptador [api]
 .venv/bin/uvicorn bike_rental.adapters.api.app:create_app --factory --app-dir src
 ```
+
+> No hace falta instalar el paquete: `--app-dir src` pone el código en el path.
+> (La instalación editable `pip install -e ".[api]"` requiere pip ≥ 21.3.)
 
 - **Swagger UI:** http://127.0.0.1:8000/docs · **OpenAPI:** `/openapi.json`
 - **Contrato versionado:** [docs/api/openapi.yaml](../docs/api/openapi.yaml)
