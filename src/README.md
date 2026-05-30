@@ -46,6 +46,27 @@ python3 examples/demo_create_rental.py
 El demo muestra los tres comportamientos clave funcionando: camino feliz,
 atomicidad ante pago rechazado y rechazo de doble asignación.
 
+## API HTTP (adaptador FastAPI, E-02)
+
+Adaptador de entrada que expone `CreateRental` por HTTP (`src/bike_rental/adapters/api/`),
+con los adaptadores de salida en memoria. El dominio no cambia ni importa FastAPI.
+
+```bash
+.venv/bin/pip install fastapi httpx uvicorn    # deps del adaptador [api]
+.venv/bin/uvicorn bike_rental.adapters.api.app:create_app --factory --app-dir src
+```
+
+> No hace falta instalar el paquete: `--app-dir src` pone el código en el path.
+> (La instalación editable `pip install -e ".[api]"` requiere pip ≥ 21.3.)
+
+- **Swagger UI:** http://127.0.0.1:8000/docs · **OpenAPI:** `/openapi.json`
+- **Contrato versionado:** [docs/api/openapi.yaml](../docs/api/openapi.yaml)
+- **Colección Postman:** [docs/postman/](../docs/postman/) (colección + environment `local`).
+  Los ids del camino feliz son deterministas, así que funcionan contra el server recién levantado.
+
+Endpoints: `POST /rentals` (201) · `GET /health` (200). Errores de dominio →
+404 / 409 / 422 / 402 con cuerpo `{error, detail}`.
+
 ## Mapa criterio → test
 
 | Historia / regla | Test |
@@ -57,9 +78,10 @@ atomicidad ante pago rechazado y rechazo de doble asignación.
 | Idempotencia del cobro (RN-20) | `tests/test_rn20_payment_idempotency.py` |
 | Tarifa inactiva rechazada | `tests/test_create_rental_validation.py` |
 | Máquina de estados de la renta (RN-12) | `tests/test_rental_state_machine.py` |
+| API HTTP HU-05..08 (FastAPI) | `tests/test_api_create_rental.py` |
 
 ## Fuera de alcance (trabajo posterior)
 
-Adaptador HTTP (FastAPI), persistencia real (SQLAlchemy + PostgreSQL),
-concurrencia física (locks/reservas, ADR-0006), y las épicas de devolución,
-movimientos y pagos parciales.
+Persistencia real (SQLAlchemy + PostgreSQL), concurrencia física
+(locks/reservas, ADR-0006), autenticación/autorización, y las épicas de
+devolución, movimientos y pagos parciales.

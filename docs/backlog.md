@@ -85,3 +85,78 @@ Una HU está lista para desarrollarse si: tiene criterios de aceptación verific
 1. **Planning (PO):** este backlog. ← *requiere aprobación antes de codear*
 2. **Implementación (devs, TDD):** modelo de dominio (entidades + value objects + puertos), caso de uso `CreateRental`, adaptadores en memoria, y tests por cada criterio de aceptación.
 3. **Review (reviewer):** validación contra criterios de aceptación e invariantes (RN-05, RN-06).
+
+---
+
+# Épica E-02 — Exponer `CreateRental` por HTTP (adaptador FastAPI)
+
+> **Estado:** propuesto (pendiente de aprobación del PO/cliente)
+> **Alcance:** **adaptador de entrada HTTP** (FastAPI) sobre el dominio ya existente, con los adaptadores de salida **en memoria** (sin BD real). Demuestra el lado *driving* del hexágono ([ADR-0008](adr/0008-estilo-de-arquitectura.md)) de punta a punta.
+> **Origen:** UC-01; reutiliza el caso de uso y los errores de dominio ya implementados ([src/](../src/README.md)).
+
+**Como** cliente de la plataforma (app/integración), **quiero** crear una renta de varias bicicletas mediante una llamada HTTP, **para** consumir el caso de uso sin acoplarme a su implementación.
+
+## Historias de usuario
+
+### HU-05 — Crear renta vía `POST /rentals` (camino feliz)
+**Como** consumidor de la API, **quiero** enviar un usuario, una estación y una lista de bicicletas y recibir la renta creada.
+
+**Prioridad:** Must · **Respaldo:** UC-01, RN-04
+
+**Criterios de aceptación:**
+- **Dado** un cuerpo válido (`user_id`, `station_id`, `bicycle_ids` con ≥1 elemento) y bicicletas disponibles, **cuando** se hace `POST /rentals`, **entonces** responde **201** con `{rental_id, payment_id, status: "activa"}`.
+
+### HU-06 — Errores de dominio → códigos HTTP correctos
+**Como** consumidor, **quiero** códigos de estado HTTP que reflejen el error, **para** reaccionar adecuadamente.
+
+**Prioridad:** Must · **Respaldo:** mapeo de los errores de dominio existentes
+
+**Criterios de aceptación (mapeo):**
+- Bicicleta/estación inexistente → **404** (`BicycleNotFoundError`, `StationNotFoundError`).
+- Bici no disponible / ya rentada / tarifa inactiva → **409** (`BicycleNotAvailableError`, `BicycleAlreadyRentedError`, `InactiveFareError`).
+- Lista vacía / bicis duplicadas → **422** (`EmptyRentalError`, `DuplicateBicycleError`).
+- Pago rechazado → **402** (`PaymentDeclinedError`).
+- En todos los casos el cuerpo incluye `{error, detail}` y **no** se filtra un stack trace.
+
+### HU-07 — Validación de entrada en el borde
+**Como** consumidor, **quiero** que una petición malformada se rechace con **422** antes de tocar el dominio.
+
+**Prioridad:** Should · **Respaldo:** validación Pydantic en el adaptador
+
+**Criterios de aceptación:**
+- **Dado** un `bicycle_ids` vacío o un UUID malformado, **entonces** responde **422** (validación del adaptador) y el dominio nunca se invoca.
+
+### HU-08 — `GET /health`
+**Como** operador, **quiero** un endpoint de salud, **para** verificar que el servicio responde.
+
+**Prioridad:** Could · **Criterio:** `GET /health` → **200** `{"status": "ok"}`.
+
+### HU-09 — Documentación consumible de la API (OpenAPI + Postman)
+**Como** consumidor de la API, **quiero** una forma lista de explorar y probar los endpoints, **para** integrarme rápido.
+
+**Prioridad:** Should · **Respaldo:** OpenAPI nativo de FastAPI + colección Postman
+
+**Criterios de aceptación:**
+- La app expone **OpenAPI** en `/openapi.json` y **Swagger UI** en `/docs` (nativo de FastAPI; sin archivos extra).
+- Se **exporta el contrato a `docs/api/openapi.yaml`** (volcado del spec generado por la app) como artefacto versionado, importable en el Swagger Editor.
+- Existe una **colección Postman** en `docs/postman/` con requests para: `POST /rentals` (camino feliz), al menos un caso de error (p. ej. bici ya rentada → 409), y `GET /health`; más una *environment* con `base_url`.
+- El `src/README.md` explica cómo levantar la API y dónde están `/docs`, el `openapi.yaml` y la colección.
+
+## Definición de Hecho (E-02)
+
+- Adaptador en `src/bike_rental/adapters/api/` (FastAPI). El **dominio no cambia** y no importa FastAPI.
+- Inyección de dependencias: el caso de uso se resuelve por `Depends` desde una raíz de composición sustituible en tests.
+- Tests con `TestClient` cubriendo HU-05..08; idealmente con `pytest.importorskip("fastapi")` para no romper la suite de dominio si FastAPI no está instalado.
+- `fastapi`/`httpx` declarados como dependencia opcional `[api]` en `pyproject.toml`.
+
+## Fuera de alcance de E-02 (intencional)
+
+- **Persistencia real, autenticación/autorización, paginación, versionado de API.**
+- **Resolución de tarifa por id** (no hay `FareRepository` aún): la API aplica una tarifa activa sembrada en la raíz de composición. Follow-up natural.
+
+## Plan de trabajo (equipo multi-agente)
+
+1. **Planning (PO):** esta épica E-02. ← *requiere aprobación antes de codear*
+2. **Implementación (devs, TDD):** paquete `adapters/api` (modelos Pydantic, raíz de composición en memoria, app FastAPI con DI y handlers de error) + tests con `TestClient`.
+3. **Review (reviewers):** mapeo de errores correcto, pureza (dominio sin FastAPI), cobertura de HU-05..08.
+4. **Cierre (PO/humano):** colección Postman en `docs/postman/` + nota en `src/README.md` sobre `/docs` (Swagger) y la colección (HU-09).

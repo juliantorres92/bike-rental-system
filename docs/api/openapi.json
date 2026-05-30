@@ -1,0 +1,202 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API de Renta de Bicicletas",
+    "description": "Adaptador HTTP de referencia (hexagonal) del caso de uso **crear renta multi-bicicleta** (UC-01). Los adaptadores de salida son en memoria; el dominio no depende de este framework.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/rentals": {
+      "post": {
+        "summary": "Crear renta de varias bicicletas",
+        "description": "Crea una renta atómica de una o varias bicicletas de una estación (UC-01). Si una bicicleta no está disponible o el pago es rechazado, no se renta ninguna ni se cobra (RN-05).",
+        "operationId": "create_rental_endpoint_rentals_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRentalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Renta creada y activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Pago rechazado por la pasarela",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bicicleta o estación inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: bicicleta no disponible, ya rentada o tarifa inactiva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Entrada inválida o regla de negocio (lista vacía / bicicletas duplicadas)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Estado del servicio",
+        "description": "Verifica que el servicio responde (sin tocar el dominio).",
+        "operationId": "health_endpoint_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateRentalRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id",
+            "description": "Identificador del cliente que renta"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Station Id",
+            "description": "Estación de origen de la renta"
+          },
+          "bicycle_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Bicycle Ids",
+            "description": "Bicicletas a rentar (al menos una)"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "user_id",
+          "station_id",
+          "bicycle_ids"
+        ],
+        "title": "CreateRentalRequest",
+        "description": "Cuerpo de ``POST /rentals`` (HU-05/HU-07).\n\nPydantic valida la sintaxis de los UUID (malformado → 422) y exige una lista\nde bicicletas no vacía en el borde (``min_length=1``); el dominio además lanza\n``EmptyRentalError`` como red de seguridad. ``extra='forbid'`` rechaza campos\ndesconocidos en la frontera."
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "Nombre del error de dominio"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "Mensaje legible del error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "ErrorResponse",
+        "description": "Cuerpo uniforme de error. ``error`` es el nombre estable del error de\ndominio; ``detail`` es un mensaje legible — nunca una traza de error."
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Estado del servicio, p. ej. 'ok'"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse",
+        "description": "Cuerpo de ``GET /health`` (HU-08): estado del servicio."
+      },
+      "RentalResponse": {
+        "properties": {
+          "rental_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Rental Id",
+            "description": "Identificador de la renta creada"
+          },
+          "payment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Payment Id",
+            "description": "Identificador del pago autorizado"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Estado de la renta (p. ej. 'activa')"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rental_id",
+          "payment_id",
+          "status"
+        ],
+        "title": "RentalResponse",
+        "description": "Respuesta de éxito de ``POST /rentals`` (201): la renta creada."
+      }
+    }
+  }
+}
