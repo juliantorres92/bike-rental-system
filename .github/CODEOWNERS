@@ -1,0 +1,6 @@
+# Code owners — revisores por defecto de los Pull Requests.
+# Sintaxis: <patrón>  <propietario(s)>
+# Docs: https://docs.github.com/articles/about-code-owners
+
+# Propietario por defecto de todo el repositorio.
+* @juliantorres92
