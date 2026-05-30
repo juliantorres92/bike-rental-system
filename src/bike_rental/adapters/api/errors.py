@@ -62,6 +62,20 @@ def _error_body(error: RentalError) -> Dict[str, str]:
     return {"error": type(error).__name__, "detail": str(error)}
 
 
+def _validation_detail(errors) -> str:
+    """Turn Pydantic's raw error list into a readable message (not its repr).
+
+    e.g. [{'loc': ('body', 'bicycle_ids'), 'msg': 'List should have at least 1
+    item ...'}] -> "bicycle_ids: List should have at least 1 item ...".
+    """
+    parts = []
+    for err in errors:
+        loc = ".".join(str(p) for p in err.get("loc", ()) if p != "body")
+        msg = err.get("msg", "invalid value")
+        parts.append(f"{loc}: {msg}" if loc else msg)
+    return "; ".join(parts) or "Invalid request"
+
+
 def install_error_handlers(app: FastAPI) -> None:
     """Register the domain-error and validation-error handlers on ``app``."""
 
@@ -74,7 +88,10 @@ def install_error_handlers(app: FastAPI) -> None:
         # HU-07: malformed UUID / empty list / extra field rejected at the edge.
         return JSONResponse(
             status_code=422,
-            content={"error": "RequestValidationError", "detail": str(exc.errors())},
+            content={
+                "error": "RequestValidationError",
+                "detail": _validation_detail(exc.errors()),
+            },
         )
 
     # A single handler for the whole RentalError family (subclasses included).
