@@ -21,6 +21,7 @@ Se usa una variante ligera de [MADR](https://adr.github.io/madr/) (Markdown Any 
 | [0005](0005-tarifa-versionada-inmutable-con-snapshot.md) | Tarifa versionada inmutable + snapshot en ItemRenta | aceptado | RN-08, C-08, modelo §8 |
 | [0006](0006-estrategia-de-concurrencia.md) | Concurrencia: control optimista + reserva con expiración | aceptado | C-03, NFR-02 |
 | [0007](0007-modelo-de-pago-e-idempotencia.md) | Modelo de pago: un Pago por Renta, idempotencia y saga de compensación | aceptado | C-06, RN-19, RN-20 |
+| [0008](0008-estilo-de-arquitectura.md) | Estilo de arquitectura: monolito modular hexagonal | aceptado | NFR-01, NFR-02, [arquitectura](../arquitectura.md) |
 
 ## Decisiones diferidas
 
