@@ -10,3 +10,4 @@ Sistema de renta de bicicletas — Especificaciones, arquitectura y stack tecnol
 - [Decisiones de arquitectura (ADRs)](docs/adr/) — registro de las decisiones técnicas con su contexto, alternativas y consecuencias.
 - [Proceso de construcción con IA](docs/proceso-con-ia.md) — cómo se usó la IA como herramienta profesional: método, verificación y criterio.
 - [Relación con el dominio de seguros](docs/relacion-con-seguros.md) — por qué las decisiones de diseño de este caso transfieren al software de seguros.
+- [Implementación de referencia (`CreateRental`)](src/README.md) — núcleo de dominio hexagonal en Python con tests y demo ejecutable, que prueba que el diseño es implementable.

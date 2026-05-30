@@ -95,7 +95,7 @@ Qué distingue este uso de "pedirle a la IA que lo haga":
 ## 7. Honestidad sobre límites
 
 - El alcance se acotó conscientemente a un día: se priorizó diseño defendible sobre exhaustividad. Las políticas de negocio no estructurales (C-02, C-05, C-07, C-09) quedaron con recomendación tentativa, no resueltas.
-- No hay app funcionando; la implementación (si se hace) es una rebanada delgada para probar que el diseño es implementable, no un producto.
+- No hay app completa funcionando; la implementación (ver §9) es el núcleo de dominio de un solo caso de uso para probar que el diseño es implementable, no un producto.
 - Este documento se actualiza si se añaden piezas posteriores.
 
 ---
@@ -109,4 +109,21 @@ Qué distingue este uso de "pedirle a la IA que lo haga":
 | ADRs | `docs/adr` | #4 | [adr/](adr/) |
 | Arquitectura | `docs/architecture` | #5 | [arquitectura.md](arquitectura.md) |
 | Stack | `docs/stack` | #6 | [stack.md](stack.md) |
-| Log de proceso | `docs/ai-process-log` | (este) | este documento |
+| Log de proceso | `docs/ai-process-log` | #7 | este documento |
+| Guiño a seguros | `docs/insurance-domain` | #8 | [relacion-con-seguros.md](relacion-con-seguros.md) |
+| Implementación `CreateRental` | `feature/create-rental` | #9 | [src/](../src/README.md) |
+
+---
+
+## 9. Implementación con equipo multi-agente (criterio #1 en acción)
+
+La implementación del caso de uso (UC-01) se construyó simulando un **equipo agile orquestado con IA**, lo que es en sí mismo una demostración de cómo se usa la IA con criterio:
+
+1. **PO (humano + IA):** se derivó el [backlog](backlog.md) (HU-01..04 con criterios Gherkin) de la spec; el humano lo aprobó antes de codear.
+2. **Arquitecto (agente):** definió un contrato (estructura, puertos, caso de uso, casos de test) sin escribir código.
+3. **Dev (agente, TDD):** implementó el dominio hexagonal + adaptadores en memoria + tests; dejó la suite en verde y **marcó honestamente** un hueco del contrato (faltaba `StationRepository`).
+4. **3 revisores en paralelo (agentes):** revisaron correctitud/atomicidad, pureza hexagonal y cobertura. Cazaron el hueco como hallazgo **mayor** y otros menores.
+5. **Dev de correcciones (agente):** resolvió los hallazgos bloqueantes/mayores y re-verificó.
+6. **Pulido (humano + IA):** se cerraron los *minor* restantes (tests RN-20 e inactiva, código muerto, tipado, guarda de máquina de estados) y se verificó la suite localmente.
+
+**Lección del proceso:** el contrato inicial del arquitecto tenía un defecto real (decremento de inventario sin puerto) que **el propio ciclo de revisión adversarial corrigió** — exactamente lo que aporta un equipo, no un único generador. La verificación (tests en verde corridos a mano, dominio sin imports de framework) cierra el lazo: la IA propone, el proceso comprueba.
