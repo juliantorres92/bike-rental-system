@@ -28,6 +28,16 @@ class StationNotFoundError(RentalError):
     """The origin station id does not exist in the repository."""
 
 
+class RentalNotFoundError(RentalError):
+    """A requested rental id does not exist in the repository (HU-12).
+
+    Raised at the adapter (read) boundary by the ``GET /rentals/{rental_id}``
+    handler when ``RentalRepository.get`` returns ``None``; it is NOT raised by
+    any domain use case. Modeled as a ``RentalError`` so the existing family
+    handler serializes it uniformly to ``{error, detail}`` with HTTP 404.
+    """
+
+
 class BicycleNotAvailableError(RentalError):
     """RN-02/RN-18: a bicycle is not 'disponible' or not at the origin station."""
 
