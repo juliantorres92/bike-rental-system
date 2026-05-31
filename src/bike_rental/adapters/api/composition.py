@@ -28,6 +28,7 @@ from ...fare.enums import TimeUnit
 from ...payment.entities import Payment
 from ...rental.entities import Rental, RentalItem
 from ...rental.use_cases.create_rental import CreateRental
+from ...rental.use_cases.return_bicycles import ReturnBicycles
 from ...shared.ids import (
     BicycleId,
     FareId,
@@ -185,7 +186,7 @@ class InMemoryWorld:
             )
             self.payment_repo.add(payment)
 
-        # --- The use case (exact constructor kwargs) ---
+        # --- The use cases (exact constructor kwargs) ---
         self.use_case: CreateRental = CreateRental(
             bicycle_repo=self.bicycle_repo,
             station_repo=self.station_repo,
@@ -194,6 +195,14 @@ class InMemoryWorld:
             payment_gateway=self.gateway,
             clock=self.clock,
             id_generator=self.id_generator,
+        )
+        # UC-02 (E-04): the return use case. No payment gateway / id generator
+        # (settlement and id minting are out of scope for E-04).
+        self.return_use_case: ReturnBicycles = ReturnBicycles(
+            rental_repo=self.rental_repo,
+            bicycle_repo=self.bicycle_repo,
+            station_repo=self.station_repo,
+            clock=self.clock,
         )
 
     def _build_active_rental(self, *, bicycle_id: BicycleId) -> Rental:

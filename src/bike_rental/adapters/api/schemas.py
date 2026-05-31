@@ -11,6 +11,7 @@ no ``X | Y`` runtime unions.
 
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
@@ -34,6 +35,24 @@ class CreateRentalRequest(BaseModel):
     bicycle_ids: List[UUID] = Field(
         min_length=1, description="Bicicletas a rentar (al menos una)"
     )
+
+
+class ReturnBicyclesRequest(BaseModel):
+    """Cuerpo de ``POST /rentals/{rental_id}/returns`` (HU-16/UC-02).
+
+    Pydantic valida la sintaxis de los UUID (malformado → 422) y exige una lista
+    de bicicletas no vacía (``min_length=1``); el dominio además lanza
+    ``EmptyRentalError``/``DuplicateBicycleError`` como red de seguridad.
+    ``extra='forbid'`` rechaza campos desconocidos en la frontera. El
+    ``rental_id`` viaja como parámetro de ruta, no en el cuerpo.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    bicycle_ids: List[UUID] = Field(
+        min_length=1, description="Bicicletas a devolver (al menos una)"
+    )
+    return_station_id: UUID = Field(description="Estación destino de la devolución")
 
 
 class RentalResponse(BaseModel):
@@ -92,11 +111,24 @@ class BicycleView(BaseModel):
 
 
 class RentalItemView(BaseModel):
-    """Vista de un ítem de renta (HU-12)."""
+    """Vista de un ítem de renta (HU-12).
+
+    Los campos de devolución (E-04) son nulos mientras el ítem está ``activo`` y
+    se rellenan al devolverlo (``devuelto``).
+    """
 
     bicycle_id: UUID = Field(description="Bicicleta asociada al ítem")
-    status: str = Field(description="Estado del ítem, p. ej. 'activo'")
+    status: str = Field(description="Estado del ítem, p. ej. 'activo' o 'devuelto'")
     estimated_amount: MoneyView = Field(description="Monto estimado del ítem")
+    final_amount: Optional[MoneyView] = Field(
+        default=None, description="Monto final al devolver (None si aún activo)"
+    )
+    usage_minutes: Optional[int] = Field(
+        default=None, description="Minutos de uso al devolver (None si aún activo)"
+    )
+    returned_at: Optional[datetime] = Field(
+        default=None, description="Instante de devolución (None si aún activo)"
+    )
 
 
 class RentalView(BaseModel):
