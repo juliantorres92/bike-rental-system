@@ -74,6 +74,10 @@ Endpoints:
 
 Errores de dominio → 404 / 409 / 422 / 402 con cuerpo `{error, detail}`.
 
+> **Reloj:** el servidor en vivo usa un `SystemClock` (tiempo real), así que
+> `started_at`/`returned_at` y los minutos facturados (RN-10) reflejan el reloj
+> de pared. Los tests inyectan un `FixedClock` determinista que avanzan a mano.
+
 ## Mapa criterio → test
 
 | Historia / regla | Test |

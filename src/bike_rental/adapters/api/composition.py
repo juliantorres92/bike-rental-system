@@ -38,9 +38,11 @@ from ...shared.ids import (
     new_rental_id,
     new_rental_item_id,
 )
+from ...rental.ports import Clock
 from ...shared.money import Money
 from ..fake_payment_gateway import AUTHORIZE, FakePaymentGateway
 from ..fixed_clock import FixedClock, UuidGenerator, utc
+from ..system_clock import SystemClock
 from ..in_memory_bicycle_repository import InMemoryBicycleRepository
 from ..in_memory_payment_repository import InMemoryPaymentRepository
 from ..in_memory_rental_repository import InMemoryRentalRepository
@@ -87,6 +89,7 @@ class InMemoryWorld:
         fare_active: bool = True,
         with_unavailable_bicycle: bool = False,
         with_active_rental: bool = False,
+        clock: Optional[Clock] = None,
     ) -> None:
         # --- Seeded ids: happy-path ids are fixed (stable for docs/Postman);
         #     the not-seeded ids stay random (only used to force 404s) ---
@@ -167,7 +170,10 @@ class InMemoryWorld:
         self.rental_repo = InMemoryRentalRepository()
         self.payment_repo = InMemoryPaymentRepository()
         self.gateway = FakePaymentGateway(outcome=payment_outcome)
-        self.clock = FixedClock(utc(2026, 5, 30))
+        # Default to a deterministic FixedClock (tests advance it); the live app
+        # boot (``with_defaults``) injects a real SystemClock so elapsed time and
+        # returned_at reflect wall-clock time (RN-10).
+        self.clock = clock if clock is not None else FixedClock(utc(2026, 5, 30))
         self.id_generator = UuidGenerator()
 
         # --- Seed the active rental AFTER wiring (uses an active fare snapshot) ---
@@ -240,5 +246,10 @@ class InMemoryWorld:
     @classmethod
     def with_defaults(cls) -> "InMemoryWorld":
         """Convenience factory for the normal app boot (3 available bicycles,
-        gateway AUTHORIZE, active fare)."""
-        return cls()
+        gateway AUTHORIZE, active fare).
+
+        Uses a real ``SystemClock`` so a running server records actual time:
+        ``started_at``/``returned_at`` and the billed elapsed time (RN-10) move
+        with wall-clock time, instead of the frozen FixedClock used by tests.
+        """
+        return cls(clock=SystemClock())
