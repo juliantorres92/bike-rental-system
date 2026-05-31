@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from ..fare.entities import Fare
 from ..fare.enums import TimeUnit
@@ -27,7 +27,11 @@ from ..shared.ids import (
 )
 from ..shared.money import Money
 from .enums import RentalItemStatus, RentalStatus
-from .errors import IllegalRentalTransition
+from .errors import (
+    IllegalRentalTransition,
+    RentalItemAlreadyReturnedError,
+    RentalNotActiveError,
+)
 
 
 @dataclass
@@ -49,6 +53,44 @@ class RentalItem:
     status: RentalItemStatus
     estimated_amount: Money
     started_at: datetime
+    # --- Devolution snapshot (UC-02/E-04): all Optional/None at creation so
+    #     ``from_fare`` is unchanged. Set only by ``mark_returned``. ---
+    returned_at: Optional[datetime] = None
+    return_station_id: Optional[StationId] = None
+    final_amount: Optional[Money] = None
+    usage_minutes: Optional[int] = None
+
+    def is_active(self) -> bool:
+        return self.status is RentalItemStatus.ACTIVO
+
+    def is_returned(self) -> bool:
+        return self.status is RentalItemStatus.DEVUELTO
+
+    def mark_returned(
+        self,
+        *,
+        return_station_id: StationId,
+        returned_at: datetime,
+        usage_minutes: int,
+        final_amount: Money,
+    ) -> None:
+        """UC-02: mark this item 'devuelto' and record its devolution snapshot.
+
+        Pure state-setter: the use case computes ``usage_minutes``/``final_amount``
+        from the FROZEN fare snapshot (RN-08/RN-10) and passes them in; this method
+        does NOT recompute fare math and does NOT apply ``fare_relocation_charge``
+        (relocation charge is out of scope for E-04). Only legal from 'activo'
+        (RN-12); a second return raises ``RentalItemAlreadyReturnedError``.
+        """
+        if self.status is not RentalItemStatus.ACTIVO:
+            raise RentalItemAlreadyReturnedError(
+                f"Rental item {self.id} is already returned"
+            )
+        self.status = RentalItemStatus.DEVUELTO
+        self.return_station_id = return_station_id
+        self.returned_at = returned_at
+        self.usage_minutes = usage_minutes
+        self.final_amount = final_amount
 
     @classmethod
     def from_fare(
@@ -87,6 +129,7 @@ class Rental:
     created_at: datetime
     payment_id: Optional[PaymentId] = None
     confirmed_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
 
     def __post_init__(self) -> None:
         if not self.items:
@@ -120,6 +163,25 @@ class Rental:
 
     def bicycle_ids(self) -> List[BicycleId]:
         return [item.bicycle_id for item in self.items]
+
+    def find_active_item_by_bicycle(
+        self, bicycle_id: BicycleId
+    ) -> Optional["RentalItem"]:
+        """UC-02: return the ACTIVE item for ``bicycle_id``, or None.
+
+        Returns None when no item references the bicycle OR when its item is
+        already 'devuelto'. The use case distinguishes the two cases (absent ->
+        ``BicycleNotInRentalError``; already returned ->
+        ``RentalItemAlreadyReturnedError``) by also inspecting ``items``.
+        """
+        for item in self.items:
+            if item.bicycle_id == bicycle_id and item.is_active():
+                return item
+        return None
+
+    def has_item_for_bicycle(self, bicycle_id: BicycleId) -> bool:
+        """Whether any item (active or returned) references ``bicycle_id``."""
+        return any(item.bicycle_id == bicycle_id for item in self.items)
 
     def derive_status(self) -> RentalStatus:
         """ADR-0004: derive status from item statuses.
@@ -164,3 +226,40 @@ class Rental:
                 "only 'pendiente_pago' -> 'fallida' is allowed"
             )
         self.status = RentalStatus.FALLIDA
+
+    def apply_return(
+        self,
+        returned: List[Tuple["RentalItem", StationId, int, Money]],
+        *,
+        returned_at: datetime,
+    ) -> None:
+        """UC-02: apply the (already validated) return of one or more items.
+
+        ``returned`` is a list of tuples ``(item, return_station_id,
+        usage_minutes, final_amount)`` resolved by the use case. Only legal from
+        'activa' or 'parcialmente_devuelta' (RN-12); otherwise
+        ``RentalNotActiveError``. Marks each targeted item 'devuelto', then
+        RE-DERIVES the rental status via :meth:`derive_status` (ADR-0004: a
+        subset 'devuelto' -> parcialmente_devuelta, all 'devuelto' ->
+        completada). If the derived status is 'completada' and the rental is not
+        yet closed, records ``closed_at = returned_at``. No payment/relocation
+        mutation (out of scope E-04).
+        """
+        if self.status not in (
+            RentalStatus.ACTIVA,
+            RentalStatus.PARCIALMENTE_DEVUELTA,
+        ):
+            raise RentalNotActiveError(
+                f"Cannot return against rental in status '{self.status.value}': "
+                "only 'activa'/'parcialmente_devuelta' allow returns (RN-12)"
+            )
+        for item, return_station_id, usage_minutes, final_amount in returned:
+            item.mark_returned(
+                return_station_id=return_station_id,
+                returned_at=returned_at,
+                usage_minutes=usage_minutes,
+                final_amount=final_amount,
+            )
+        self.status = self.derive_status()
+        if self.status is RentalStatus.COMPLETADA and self.closed_at is None:
+            self.closed_at = returned_at

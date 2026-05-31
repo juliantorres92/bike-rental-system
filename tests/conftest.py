@@ -46,6 +46,7 @@ from bike_rental.bicycle.enums import BicycleStatus  # noqa: E402
 from bike_rental.fare.entities import Fare  # noqa: E402
 from bike_rental.fare.enums import TimeUnit  # noqa: E402
 from bike_rental.rental.use_cases.create_rental import CreateRental  # noqa: E402
+from bike_rental.rental.use_cases.return_bicycles import ReturnBicycles  # noqa: E402
 from bike_rental.shared.ids import (  # noqa: E402
     new_bicycle_id,
     new_fare_id,
@@ -117,6 +118,7 @@ class Wiring:
     clock: FixedClock
     ids: DeterministicIdGenerator
     use_case: CreateRental
+    return_use_case: ReturnBicycles
 
 
 def build_wiring(
@@ -141,6 +143,12 @@ def build_wiring(
         clock=clock,
         id_generator=ids,
     )
+    return_use_case = ReturnBicycles(
+        rental_repo=rental_repo,
+        bicycle_repo=bicycle_repo,
+        station_repo=station_repo,
+        clock=clock,
+    )
     return Wiring(
         bicycle_repo=bicycle_repo,
         station_repo=station_repo,
@@ -150,6 +158,7 @@ def build_wiring(
         clock=clock,
         ids=ids,
         use_case=use_case,
+        return_use_case=return_use_case,
     )
 
 

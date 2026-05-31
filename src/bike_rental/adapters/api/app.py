@@ -30,6 +30,10 @@ from ...rental.use_cases.create_rental import (
     CreateRental,
     CreateRentalCommand,
 )
+from ...rental.use_cases.return_bicycles import (
+    ReturnBicycles,
+    ReturnBicyclesCommand,
+)
 from ...shared.ids import BicycleId, RentalId, StationId, UserId
 from ...shared.money import Money
 from .composition import InMemoryWorld
@@ -43,6 +47,7 @@ from .schemas import (
     RentalItemView,
     RentalResponse,
     RentalView,
+    ReturnBicyclesRequest,
     StationView,
 )
 
@@ -50,6 +55,11 @@ from .schemas import (
 def get_create_rental(request: Request) -> CreateRental:
     """Resolve the wired use case from the composition root on app.state."""
     return request.app.state.world.use_case
+
+
+def get_return_bicycles(request: Request) -> ReturnBicycles:
+    """Resolve the wired return use case from the composition root (UC-02)."""
+    return request.app.state.world.return_use_case
 
 
 def get_active_fare(request: Request) -> Fare:
@@ -107,6 +117,9 @@ def _rental_item_view(item: RentalItem) -> RentalItemView:
         bicycle_id=item.bicycle_id,
         status=item.status.value,
         estimated_amount=_money_view(item.estimated_amount),
+        final_amount=_money_view(item.final_amount) if item.final_amount is not None else None,
+        usage_minutes=item.usage_minutes,
+        returned_at=item.returned_at,
     )
 
 
@@ -184,6 +197,51 @@ def create_app(world: Optional[InMemoryWorld] = None) -> FastAPI:
             payment_id=result.payment_id,
             status=result.status.value,
         )
+
+    @app.post(
+        "/rentals/{rental_id}/returns",
+        status_code=200,
+        response_model=RentalView,
+        summary="Devolver una o varias bicicletas de una renta",
+        description=(
+            "Devuelve una o varias bicicletas de una renta en una estación "
+            "destino (UC-02). Devolución total → renta 'completada'; parcial → "
+            "'parcialmente_devuelta' (estado derivado). Operación atómica: si "
+            "algo falla, no se devuelve ninguna (RN-05). No liquida el pago ni "
+            "cobra reubicación (fuera de alcance E-04)."
+        ),
+        responses={
+            200: {"description": "Renta actualizada tras la devolución"},
+            404: {
+                "model": ErrorResponse,
+                "description": "Renta o estación destino inexistente",
+            },
+            409: {
+                "model": ErrorResponse,
+                "description": (
+                    "Conflicto: renta no activa, ítem ya devuelto, bicicleta "
+                    "ajena a la renta o estación destino llena"
+                ),
+            },
+            422: {
+                "model": ErrorResponse,
+                "description": "Entrada inválida (lista vacía / UUID malformado)",
+            },
+        },
+    )
+    def return_bicycles_endpoint(
+        rental_id: UUID,
+        body: ReturnBicyclesRequest,
+        use_case: ReturnBicycles = Depends(get_return_bicycles),
+    ) -> RentalView:
+        # HU-16: translate edge DTO + path param -> domain command.
+        command = ReturnBicyclesCommand(
+            rental_id=RentalId(rental_id),
+            bicycle_ids=[BicycleId(b) for b in body.bicycle_ids],
+            return_station_id=StationId(body.return_station_id),
+        )
+        rental = use_case.execute(command)
+        return _rental_view(rental)
 
     @app.get(
         "/stations",

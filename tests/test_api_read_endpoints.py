@@ -184,8 +184,15 @@ def test_hu12_get_rental_returns_200_with_items_and_money():
 
     items_sum = Decimal("0")
     for item in data["items"]:
-        assert set(item) == {"bicycle_id", "status", "estimated_amount"}
+        assert set(item) == {
+            "bicycle_id", "status", "estimated_amount",
+            "final_amount", "usage_minutes", "returned_at",
+        }
         assert item["status"] == RentalItemStatus.ACTIVO.value == "activo"
+        # An active item has no devolution data yet (E-04 fields are null).
+        assert item["final_amount"] is None
+        assert item["usage_minutes"] is None
+        assert item["returned_at"] is None
         assert _is_uuid(item["bicycle_id"])
         amt = item["estimated_amount"]
         assert set(amt) == {"amount", "currency"}
