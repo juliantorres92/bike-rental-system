@@ -160,3 +160,62 @@ Una HU está lista para desarrollarse si: tiene criterios de aceptación verific
 2. **Implementación (devs, TDD):** paquete `adapters/api` (modelos Pydantic, raíz de composición en memoria, app FastAPI con DI y handlers de error) + tests con `TestClient`.
 3. **Review (reviewers):** mapeo de errores correcto, pureza (dominio sin FastAPI), cobertura de HU-05..08.
 4. **Cierre (PO/humano):** colección Postman en `docs/postman/` + nota en `src/README.md` sobre `/docs` (Swagger) y la colección (HU-09).
+
+---
+
+# Épica E-03 — Endpoints de consulta (lado lectura)
+
+> **Estado:** propuesto (pendiente de aprobación del PO/cliente)
+> **Alcance:** endpoints HTTP **de solo lectura** sobre los adaptadores en memoria existentes, para **descubrir ids** y **consultar rentas**. No cambian reglas de negocio; añaden métodos de lectura a los repos y rutas `GET` al adaptador.
+> **Origen:** resuelve la fricción detectada en E-02 (un consumidor no conoce los ids sembrados) y completa el lado *query* del hexágono. UC-05/UC-08 de la spec.
+
+**Como** consumidor de la API, **quiero** consultar estaciones, sus bicicletas y una renta por id, **para** descubrir qué datos existen y verificar el resultado de una renta sin acceso a la base de datos.
+
+## Historias de usuario
+
+### HU-10 — Listar estaciones (`GET /stations`)
+**Como** consumidor, **quiero** la lista de estaciones, **para** elegir una y conocer su inventario.
+
+**Prioridad:** Must · **Respaldo:** UC-05
+
+**Criterios de aceptación:**
+- **Dado** el catálogo sembrado, **cuando** hago `GET /stations`, **entonces** responde **200** con una lista de `{id, code, name, capacity, available_inventory}`.
+
+### HU-11 — Bicicletas de una estación (`GET /stations/{station_id}/bicycles`)
+**Como** consumidor, **quiero** ver las bicicletas de una estación, **para** saber cuáles puedo rentar.
+
+**Prioridad:** Must · **Respaldo:** UC-05/UC-08
+
+**Criterios de aceptación:**
+- **Dado** un `station_id` existente, **entonces** responde **200** con `[{id, code, status}]` de las bicicletas de esa estación.
+- **Dado** un `station_id` inexistente, **entonces** responde **404** (`StationNotFoundError`).
+- (Opcional) soporta `?available=true` para filtrar solo `disponible`.
+
+### HU-12 — Consultar una renta (`GET /rentals/{rental_id}`)
+**Como** consumidor, **quiero** consultar una renta por id, **para** verificar su estado e ítems tras crearla.
+
+**Prioridad:** Must · **Respaldo:** UC-01 (postcondición observable)
+
+**Criterios de aceptación:**
+- **Dado** una renta existente, **entonces** responde **200** con `{id, status, estimated_total, payment_id, items: [{bicycle_id, status, estimated_amount}]}`.
+- **Dado** un `rental_id` inexistente, **entonces** responde **404** (`RentalNotFoundError`).
+
+## Definición de Hecho (E-03)
+
+- Métodos de **lectura** en los repos/puertos en memoria (p. ej. `list_stations()`, `list_bicycles_by_station()`, `RentalRepository.get` ya existe). El dominio **no cambia su comportamiento**; solo se añade capacidad de consulta.
+- Nuevos modelos de respuesta Pydantic (vistas de lectura) en el adaptador; **sin** filtrar entidades de dominio crudas.
+- Si hace falta un error `RentalNotFoundError` para el 404 de HU-12, se añade a los errores de dominio y se mapea en el adaptador (404).
+- Tests `TestClient` para HU-10..12 (incluidos los 404).
+- Se añaden los endpoints al `openapi.yaml`, a la colección Postman y al `src/README.md`.
+
+## Fuera de alcance de E-03 (intencional)
+
+- **Persistencia real, paginación, filtros avanzados, auth.**
+- **Mutaciones** (esas son E-04 devolución y siguientes).
+
+## Plan de trabajo (equipo multi-agente)
+
+1. **Planning (PO):** esta épica E-03. ← *requiere aprobación antes de codear*
+2. **Implementación (devs, TDD):** métodos de lectura en repos + vistas Pydantic + rutas `GET` + tests `TestClient`.
+3. **Review (reviewers):** read-only (sin mutaciones ni reglas nuevas), 404 correctos, dominio sin framework, cobertura HU-10..12.
+4. **Cierre (PO/humano):** regenerar `openapi.yaml`, actualizar Postman y README.
