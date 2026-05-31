@@ -112,6 +112,7 @@ Qué distingue este uso de "pedirle a la IA que lo haga":
 | Log de proceso | `docs/ai-process-log` | #7 | este documento |
 | Guiño a seguros | `docs/insurance-domain` | #8 | [relacion-con-seguros.md](relacion-con-seguros.md) |
 | Implementación `CreateRental` | `feature/create-rental` | #9 | [src/](../src/README.md) |
+| Adaptador HTTP (FastAPI, E-02) | `feature/create-rental-api` | #10 | [adr/0010](adr/0010-adaptador-http-fastapi.md) |
 
 ---
 
@@ -127,3 +128,5 @@ La implementación del caso de uso (UC-01) se construyó simulando un **equipo a
 6. **Pulido (humano + IA):** se cerraron los *minor* restantes (tests RN-20 e inactiva, código muerto, tipado, guarda de máquina de estados) y se verificó la suite localmente.
 
 **Lección del proceso:** el contrato inicial del arquitecto tenía un defecto real (decremento de inventario sin puerto) que **el propio ciclo de revisión adversarial corrigió** — exactamente lo que aporta un equipo, no un único generador. La verificación (tests en verde corridos a mano, dominio sin imports de framework) cierra el lazo: la IA propone, el proceso comprueba.
+
+El mismo equipo construyó después el **adaptador HTTP (E-02, PR #10)** con idéntica mecánica (backlog → arquitecto → dev TDD con `TestClient` → 3 revisores → correcciones). El ciclo de revisión cazó un hallazgo *mayor* (faltaba el test de `DuplicateBicycleError`→422) y el humano cerró los *minor* (seed determinista para que la colección Postman funcione, `detail` de validación legible) y documentó las decisiones del adaptador en el [ADR-0010](adr/0010-adaptador-http-fastapi.md). Resultado: 28 tests en verde y el dominio sigue sin importar FastAPI.

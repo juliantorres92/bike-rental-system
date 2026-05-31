@@ -23,6 +23,7 @@ Se usa una variante ligera de [MADR](https://adr.github.io/madr/) (Markdown Any 
 | [0007](0007-modelo-de-pago-e-idempotencia.md) | Modelo de pago: un Pago por Renta, idempotencia y saga de compensación | aceptado | C-06, RN-19, RN-20 |
 | [0008](0008-estilo-de-arquitectura.md) | Estilo de arquitectura: monolito modular hexagonal | aceptado | NFR-01, NFR-02, [arquitectura](../arquitectura.md) |
 | [0009](0009-stack-tecnologico.md) | Stack: Python + FastAPI + SQLAlchemy + PostgreSQL | aceptado | [stack](../stack.md), ADR-0008 |
+| [0010](0010-adaptador-http-fastapi.md) | Adaptador HTTP (FastAPI): mapeo error→HTTP, composición en memoria, validación de borde | aceptado | E-02, ADR-0008 |
 
 ## Decisiones diferidas
 
