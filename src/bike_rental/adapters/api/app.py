@@ -17,22 +17,33 @@ Python 3.9 compatible: ``from __future__ import annotations`` + ``typing.List/Op
 from __future__ import annotations
 
 from typing import List, Optional
+from uuid import UUID
 
 from fastapi import Depends, FastAPI, Request
 
+from ...bicycle.entities import Bicycle, Station
 from ...fare.entities import Fare
+from ...rental.entities import Rental, RentalItem
+from ...rental.errors import RentalNotFoundError, StationNotFoundError
+from ...rental.ports import BicycleRepository, RentalRepository, StationRepository
 from ...rental.use_cases.create_rental import (
     CreateRental,
     CreateRentalCommand,
 )
-from ...shared.ids import BicycleId, StationId, UserId
+from ...shared.ids import BicycleId, RentalId, StationId, UserId
+from ...shared.money import Money
 from .composition import InMemoryWorld
 from .errors import install_error_handlers
 from .schemas import (
+    BicycleView,
     CreateRentalRequest,
     ErrorResponse,
     HealthResponse,
+    MoneyView,
+    RentalItemView,
     RentalResponse,
+    RentalView,
+    StationView,
 )
 
 
@@ -48,6 +59,65 @@ def get_active_fare(request: Request) -> Fare:
     applies this single seeded fare.
     """
     return request.app.state.world.active_fare
+
+
+def get_station_repo(request: Request) -> StationRepository:
+    """Resolve the wired StationRepository from app.state (HU-10/HU-11)."""
+    return request.app.state.world.station_repo
+
+
+def get_bicycle_repo(request: Request) -> BicycleRepository:
+    """Resolve the wired BicycleRepository from app.state (HU-11)."""
+    return request.app.state.world.bicycle_repo
+
+
+def get_rental_repo(request: Request) -> RentalRepository:
+    """Resolve the wired RentalRepository from app.state (HU-12)."""
+    return request.app.state.world.rental_repo
+
+
+# --- Read-side view mappers: domain entity -> Pydantic view (E-03) -----------
+# The handler is the boundary translator; raw domain entities are never returned.
+
+
+def _money_view(money: Money) -> MoneyView:
+    return MoneyView(amount=money.amount, currency=money.currency)
+
+
+def _station_view(station: Station) -> StationView:
+    return StationView(
+        id=station.id,
+        code=station.code,
+        name=station.name,
+        capacity=station.capacity,
+        available_inventory=station.available_inventory,
+    )
+
+
+def _bicycle_view(bicycle: Bicycle) -> BicycleView:
+    return BicycleView(
+        id=bicycle.id,
+        code=bicycle.code,
+        status=bicycle.status.value,
+    )
+
+
+def _rental_item_view(item: RentalItem) -> RentalItemView:
+    return RentalItemView(
+        bicycle_id=item.bicycle_id,
+        status=item.status.value,
+        estimated_amount=_money_view(item.estimated_amount),
+    )
+
+
+def _rental_view(rental: Rental) -> RentalView:
+    return RentalView(
+        id=rental.id,
+        status=rental.status.value,
+        estimated_total=_money_view(rental.estimated_total),
+        payment_id=rental.payment_id,
+        items=[_rental_item_view(i) for i in rental.items],
+    )
 
 
 def create_app(world: Optional[InMemoryWorld] = None) -> FastAPI:
@@ -114,6 +184,71 @@ def create_app(world: Optional[InMemoryWorld] = None) -> FastAPI:
             payment_id=result.payment_id,
             status=result.status.value,
         )
+
+    @app.get(
+        "/stations",
+        response_model=List[StationView],
+        summary="Listar estaciones",
+        description=(
+            "HU-10: lista todas las estaciones sembradas para descubrir ids e "
+            "inventario. Solo lectura; lista vacía (200, []) si no hay estaciones."
+        ),
+    )
+    def list_stations_endpoint(
+        station_repo: StationRepository = Depends(get_station_repo),
+    ) -> List[StationView]:
+        return [_station_view(s) for s in station_repo.list_stations()]
+
+    @app.get(
+        "/stations/{station_id}/bicycles",
+        response_model=List[BicycleView],
+        summary="Bicicletas de una estación",
+        description=(
+            "HU-11: lista las bicicletas ubicadas en una estación. Con "
+            "``?available=true`` filtra solo las disponibles en estación."
+        ),
+        responses={
+            404: {"model": ErrorResponse, "description": "Estación inexistente"},
+            422: {"model": ErrorResponse, "description": "station_id no es un UUID válido"},
+        },
+    )
+    def list_station_bicycles_endpoint(
+        station_id: UUID,
+        available: bool = False,
+        station_repo: StationRepository = Depends(get_station_repo),
+        bicycle_repo: BicycleRepository = Depends(get_bicycle_repo),
+    ) -> List[BicycleView]:
+        # HU-11: validate existence first (404), then read bicycles at the station.
+        sid = StationId(station_id)
+        if station_repo.get(sid) is None:
+            raise StationNotFoundError(f"Station {station_id} not found")
+        bicycles = bicycle_repo.list_by_station(sid)
+        if available:
+            bicycles = [b for b in bicycles if b.is_available()]
+        return [_bicycle_view(b) for b in bicycles]
+
+    @app.get(
+        "/rentals/{rental_id}",
+        response_model=RentalView,
+        summary="Consultar una renta por id",
+        description=(
+            "HU-12: obtiene una renta por id para verificar su estado e ítems "
+            "tras crearla. Solo lectura."
+        ),
+        responses={
+            404: {"model": ErrorResponse, "description": "Renta inexistente"},
+            422: {"model": ErrorResponse, "description": "rental_id no es un UUID válido"},
+        },
+    )
+    def get_rental_endpoint(
+        rental_id: UUID,
+        rental_repo: RentalRepository = Depends(get_rental_repo),
+    ) -> RentalView:
+        # HU-12: adapter-level read miss expressed as a domain error -> 404.
+        rental = rental_repo.get(RentalId(rental_id))
+        if rental is None:
+            raise RentalNotFoundError(f"Rental {rental_id} not found")
+        return _rental_view(rental)
 
     @app.get(
         "/health",

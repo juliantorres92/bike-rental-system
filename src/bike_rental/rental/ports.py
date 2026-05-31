@@ -41,6 +41,13 @@ class BicycleRepository(ABC):
         """Return only the bicycles found (missing ids are simply absent)."""
 
     @abstractmethod
+    def list_by_station(self, station_id: StationId) -> List[Bicycle]:
+        """Read-only (HU-11): bicycles currently located at ``station_id``.
+
+        A rented bike has ``station_id=None`` and is therefore excluded.
+        """
+
+    @abstractmethod
     def save(self, bicycle: Bicycle) -> None: ...
 
     @abstractmethod
@@ -63,6 +70,10 @@ class StationRepository(ABC):
     @abstractmethod
     def get(self, station_id: StationId) -> Optional[Station]:
         """Load the origin station (UC-01 step 7 / RN-01 inventory)."""
+
+    @abstractmethod
+    def list_stations(self) -> List[Station]:
+        """Read-only (HU-10): all seeded stations, in insertion order."""
 
     @abstractmethod
     def save(self, station: Station) -> None:

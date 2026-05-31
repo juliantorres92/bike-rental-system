@@ -34,6 +34,7 @@ from ...rental.errors import (
     InactiveFareError,
     PaymentDeclinedError,
     RentalError,
+    RentalNotFoundError,
     StationNotFoundError,
 )
 
@@ -42,6 +43,7 @@ from ...rental.errors import (
 ERROR_STATUS: Dict[Type[RentalError], int] = {
     BicycleNotFoundError: 404,
     StationNotFoundError: 404,
+    RentalNotFoundError: 404,
     BicycleNotAvailableError: 409,
     BicycleAlreadyRentedError: 409,
     InactiveFareError: 409,

@@ -8,7 +8,7 @@ key for RN-05: if the use case never saves, the station inventory is unchanged.
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, List, Optional
 
 from ..bicycle.entities import Station
 from ..rental.ports import StationRepository
@@ -21,6 +21,10 @@ class InMemoryStationRepository(StationRepository):
 
     def get(self, station_id: StationId) -> Optional[Station]:
         return self._store.get(station_id)
+
+    def list_stations(self) -> List[Station]:
+        # Read-only (HU-10): insertion order of the dict store.
+        return list(self._store.values())
 
     def save(self, station: Station) -> None:
         self._store[station.id] = station
