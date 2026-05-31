@@ -1,6 +1,9 @@
 # Skills locales del proyecto (agent-skills) — no versionar
 .claude/skills/
 
+# macOS
+.DS_Store
+
 # Python
 .venv/
 __pycache__/
