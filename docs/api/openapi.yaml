@@ -51,6 +51,99 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /stations:
+    get:
+      summary: Listar estaciones
+      description: 'HU-10: lista todas las estaciones sembradas para descubrir ids
+        e inventario. Solo lectura; lista vacía (200, []) si no hay estaciones.'
+      operationId: list_stations_endpoint_stations_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/StationView'
+                type: array
+                title: Response List Stations Endpoint Stations Get
+  /stations/{station_id}/bicycles:
+    get:
+      summary: Bicicletas de una estación
+      description: 'HU-11: lista las bicicletas ubicadas en una estación. Con ``?available=true``
+        filtra solo las disponibles en estación.'
+      operationId: list_station_bicycles_endpoint_stations__station_id__bicycles_get
+      parameters:
+      - name: station_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Station Id
+      - name: available
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Available
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BicycleView'
+                title: Response List Station Bicycles Endpoint Stations  Station Id  Bicycles
+                  Get
+        '404':
+          description: Estación inexistente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: station_id no es un UUID válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rentals/{rental_id}:
+    get:
+      summary: Consultar una renta por id
+      description: 'HU-12: obtiene una renta por id para verificar su estado e ítems
+        tras crearla. Solo lectura.'
+      operationId: get_rental_endpoint_rentals__rental_id__get
+      parameters:
+      - name: rental_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Rental Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentalView'
+        '404':
+          description: Renta inexistente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: rental_id no es un UUID válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /health:
     get:
       summary: Estado del servicio
@@ -65,6 +158,28 @@ paths:
                 $ref: '#/components/schemas/HealthResponse'
 components:
   schemas:
+    BicycleView:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Identificador de la bicicleta
+        code:
+          type: string
+          title: Code
+          description: Código de la bicicleta, p. ej. 'BIKE-1'
+        status:
+          type: string
+          title: Status
+          description: Estado de la bicicleta, p. ej. 'disponible'
+      type: object
+      required:
+      - id
+      - code
+      - status
+      title: BicycleView
+      description: Vista de una bicicleta (HU-11).
     CreateRentalRequest:
       properties:
         user_id:
@@ -132,6 +247,49 @@ components:
       - status
       title: HealthResponse
       description: 'Cuerpo de ``GET /health`` (HU-08): estado del servicio.'
+    MoneyView:
+      properties:
+        amount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Amount
+          description: Monto con 2 decimales (DECIMAL(12,2))
+        currency:
+          type: string
+          title: Currency
+          description: Moneda, p. ej. 'COP'
+      type: object
+      required:
+      - amount
+      - currency
+      title: MoneyView
+      description: 'Vista de un valor ``Money`` del dominio.
+
+
+        ``amount`` es ``Decimal`` (DECIMAL(12,2)); Pydantic lo serializa como número
+
+        JSON, NUNCA como ``float``, preservando la precisión monetaria.'
+    RentalItemView:
+      properties:
+        bicycle_id:
+          type: string
+          format: uuid
+          title: Bicycle Id
+          description: Bicicleta asociada al ítem
+        status:
+          type: string
+          title: Status
+          description: Estado del ítem, p. ej. 'activo'
+        estimated_amount:
+          $ref: '#/components/schemas/MoneyView'
+          description: Monto estimado del ítem
+      type: object
+      required:
+      - bicycle_id
+      - status
+      - estimated_amount
+      title: RentalItemView
+      description: Vista de un ítem de renta (HU-12).
     RentalResponse:
       properties:
         rental_id:
@@ -155,3 +313,70 @@ components:
       - status
       title: RentalResponse
       description: 'Respuesta de éxito de ``POST /rentals`` (201): la renta creada.'
+    RentalView:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Identificador de la renta
+        status:
+          type: string
+          title: Status
+          description: Estado de la renta, p. ej. 'activa'
+        estimated_total:
+          $ref: '#/components/schemas/MoneyView'
+          description: Total estimado de la renta
+        payment_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Payment Id
+          description: Pago asociado (None si aún no confirmada / fallida)
+        items:
+          items:
+            $ref: '#/components/schemas/RentalItemView'
+          type: array
+          title: Items
+          description: Ítems de la renta
+      type: object
+      required:
+      - id
+      - status
+      - estimated_total
+      - items
+      title: RentalView
+      description: Vista de una renta y sus ítems (HU-12).
+    StationView:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Identificador de la estación
+        code:
+          type: string
+          title: Code
+          description: Código de la estación, p. ej. 'ST-01'
+        name:
+          type: string
+          title: Name
+          description: Nombre de la estación
+        capacity:
+          type: integer
+          title: Capacity
+          description: Capacidad total de la estación
+        available_inventory:
+          type: integer
+          title: Available Inventory
+          description: Bicicletas disponibles en la estación
+      type: object
+      required:
+      - id
+      - code
+      - name
+      - capacity
+      - available_inventory
+      title: StationView
+      description: Vista de una estación (HU-10).

@@ -64,8 +64,14 @@ con los adaptadores de salida en memoria. El dominio no cambia ni importa FastAP
 - **Colección Postman:** [docs/postman/](../docs/postman/) (colección + environment `local`).
   Los ids del camino feliz son deterministas, así que funcionan contra el server recién levantado.
 
-Endpoints: `POST /rentals` (201) · `GET /health` (200). Errores de dominio →
-404 / 409 / 422 / 402 con cuerpo `{error, detail}`.
+Endpoints:
+- `POST /rentals` (201) — crear renta multi-bici (E-02).
+- `GET /stations` (200) — listar estaciones / descubrir ids (E-03).
+- `GET /stations/{id}/bicycles` (200 · 404) — bicicletas de una estación; `?available=true` filtra disponibles (E-03).
+- `GET /rentals/{id}` (200 · 404) — consultar una renta creada (E-03).
+- `GET /health` (200).
+
+Errores de dominio → 404 / 409 / 422 / 402 con cuerpo `{error, detail}`.
 
 ## Mapa criterio → test
 
@@ -79,6 +85,7 @@ Endpoints: `POST /rentals` (201) · `GET /health` (200). Errores de dominio →
 | Tarifa inactiva rechazada | `tests/test_create_rental_validation.py` |
 | Máquina de estados de la renta (RN-12) | `tests/test_rental_state_machine.py` |
 | API HTTP HU-05..08 (FastAPI) | `tests/test_api_create_rental.py` |
+| API consultas HU-10..12 (GET) | `tests/test_api_read_endpoints.py` |
 
 ## Fuera de alcance (trabajo posterior)
 
