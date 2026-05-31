@@ -75,6 +75,77 @@
         }
       }
     },
+    "/rentals/{rental_id}/returns": {
+      "post": {
+        "summary": "Devolver una o varias bicicletas de una renta",
+        "description": "Devuelve una o varias bicicletas de una renta en una estación destino (UC-02). Devolución total → renta 'completada'; parcial → 'parcialmente_devuelta' (estado derivado). Operación atómica: si algo falla, no se devuelve ninguna (RN-05). No liquida el pago ni cobra reubicación (fuera de alcance E-04).",
+        "operationId": "return_bicycles_endpoint_rentals__rental_id__returns_post",
+        "parameters": [
+          {
+            "name": "rental_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rental Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReturnBicyclesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Renta actualizada tras la devolución",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Renta o estación destino inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: renta no activa, ítem ya devuelto, bicicleta ajena a la renta o estación destino llena",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Entrada inválida (lista vacía / UUID malformado)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/stations": {
       "get": {
         "summary": "Listar estaciones",
@@ -368,11 +439,47 @@
           "status": {
             "type": "string",
             "title": "Status",
-            "description": "Estado del ítem, p. ej. 'activo'"
+            "description": "Estado del ítem, p. ej. 'activo' o 'devuelto'"
           },
           "estimated_amount": {
             "$ref": "#/components/schemas/MoneyView",
             "description": "Monto estimado del ítem"
+          },
+          "final_amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Monto final al devolver (None si aún activo)"
+          },
+          "usage_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Minutes",
+            "description": "Minutos de uso al devolver (None si aún activo)"
+          },
+          "returned_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Returned At",
+            "description": "Instante de devolución (None si aún activo)"
           }
         },
         "type": "object",
@@ -382,7 +489,7 @@
           "estimated_amount"
         ],
         "title": "RentalItemView",
-        "description": "Vista de un ítem de renta (HU-12)."
+        "description": "Vista de un ítem de renta (HU-12).\n\nLos campos de devolución (E-04) son nulos mientras el ítem está ``activo`` y\nse rellenan al devolverlo (``devuelto``)."
       },
       "RentalResponse": {
         "properties": {
@@ -461,6 +568,34 @@
         ],
         "title": "RentalView",
         "description": "Vista de una renta y sus ítems (HU-12)."
+      },
+      "ReturnBicyclesRequest": {
+        "properties": {
+          "bicycle_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Bicycle Ids",
+            "description": "Bicicletas a devolver (al menos una)"
+          },
+          "return_station_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Return Station Id",
+            "description": "Estación destino de la devolución"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bicycle_ids",
+          "return_station_id"
+        ],
+        "title": "ReturnBicyclesRequest",
+        "description": "Cuerpo de ``POST /rentals/{rental_id}/returns`` (HU-16/UC-02).\n\nPydantic valida la sintaxis de los UUID (malformado → 422) y exige una lista\nde bicicletas no vacía (``min_length=1``); el dominio además lanza\n``EmptyRentalError``/``DuplicateBicycleError`` como red de seguridad.\n``extra='forbid'`` rechaza campos desconocidos en la frontera. El\n``rental_id`` viaja como parámetro de ruta, no en el cuerpo."
       },
       "StationView": {
         "properties": {

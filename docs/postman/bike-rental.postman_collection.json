@@ -118,6 +118,25 @@
       ] } }]
     },
     {
+      "name": "Devolver bicicleta (parcial, 200) — requiere crear renta antes",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"bicycle_ids\": [\"{{bike_1}}\"],\n  \"return_station_id\": \"{{station_id}}\"\n}" },
+        "url": { "raw": "{{base_url}}/rentals/{{rental_id}}/returns", "host": ["{{base_url}}"], "path": ["rentals", "{{rental_id}}", "returns"] }
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('200 OK', () => pm.response.to.have.status(200));",
+        "const r = pm.response.json();",
+        "pm.test('renta parcialmente devuelta', () => pm.expect(r.status).to.eql('parcialmente_devuelta'));",
+        "pm.test('el item devuelto trae final_amount y usage_minutes', () => {",
+        "  const dev = r.items.find(i => i.status === 'devuelto');",
+        "  pm.expect(dev).to.be.an('object');",
+        "  pm.expect(dev.final_amount).to.be.an('object');",
+        "});"
+      ] } }]
+    },
+    {
       "name": "Consultar renta por id (200) — requiere crear renta antes",
       "request": {
         "method": "GET", "header": [],
