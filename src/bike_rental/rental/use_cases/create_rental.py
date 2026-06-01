@@ -24,7 +24,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List
 
-from ...bicycle.entities import Bicycle
+from ...inventory.entities import Bicycle
 from ...fare.entities import Fare
 from ...payment.entities import Payment, idempotency_key_for
 from ...shared.ids import BicycleId, PaymentId, RentalId, StationId, UserId

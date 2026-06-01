@@ -21,8 +21,8 @@ from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-from ...bicycle.entities import Bicycle, Station
-from ...bicycle.enums import BicycleStatus
+from ...inventory.entities import Bicycle, Station
+from ...inventory.enums import BicycleStatus
 from ...fare.entities import Fare
 from ...fare.enums import TimeUnit
 from ...payment.entities import Payment

@@ -41,8 +41,8 @@ from bike_rental.adapters.in_memory_rental_repository import (  # noqa: E402
 from bike_rental.adapters.in_memory_station_repository import (  # noqa: E402
     InMemoryStationRepository,
 )
-from bike_rental.bicycle.entities import Bicycle, Station  # noqa: E402
-from bike_rental.bicycle.enums import BicycleStatus  # noqa: E402
+from bike_rental.inventory.entities import Bicycle, Station  # noqa: E402
+from bike_rental.inventory.enums import BicycleStatus  # noqa: E402
 from bike_rental.fare.entities import Fare  # noqa: E402
 from bike_rental.fare.enums import TimeUnit  # noqa: E402
 from bike_rental.rental.use_cases.create_rental import CreateRental  # noqa: E402

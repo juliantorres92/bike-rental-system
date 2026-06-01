@@ -30,8 +30,8 @@ from bike_rental.adapters.in_memory_bicycle_repository import InMemoryBicycleRep
 from bike_rental.adapters.in_memory_payment_repository import InMemoryPaymentRepository
 from bike_rental.adapters.in_memory_rental_repository import InMemoryRentalRepository
 from bike_rental.adapters.in_memory_station_repository import InMemoryStationRepository
-from bike_rental.bicycle.entities import Bicycle, Station
-from bike_rental.bicycle.enums import BicycleStatus
+from bike_rental.inventory.entities import Bicycle, Station
+from bike_rental.inventory.enums import BicycleStatus
 from bike_rental.fare.entities import Fare
 from bike_rental.fare.enums import TimeUnit
 from bike_rental.rental.errors import BicycleAlreadyRentedError, PaymentDeclinedError

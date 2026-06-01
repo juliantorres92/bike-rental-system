@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Dict, Iterable, List, Optional
 
-from ..bicycle.entities import Station
+from ..inventory.entities import Station
 from ..rental.ports import StationRepository
 from ..shared.ids import StationId
 

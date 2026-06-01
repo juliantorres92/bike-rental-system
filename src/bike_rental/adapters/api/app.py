@@ -21,7 +21,7 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, Request
 
-from ...bicycle.entities import Bicycle, Station
+from ...inventory.entities import Bicycle, Station
 from ...fare.entities import Fare
 from ...rental.entities import Rental, RentalItem
 from ...rental.errors import RentalNotFoundError, StationNotFoundError

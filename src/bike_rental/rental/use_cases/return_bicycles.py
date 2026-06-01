@@ -28,7 +28,7 @@ import math
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
-from ...bicycle.entities import Bicycle
+from ...inventory.entities import Bicycle
 from ...fare.enums import TimeUnit
 from ...shared.ids import BicycleId, RentalId, StationId
 from ...shared.money import Money

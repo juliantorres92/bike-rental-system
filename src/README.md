@@ -16,7 +16,7 @@ documentado es implementable y correcto — **no** un producto completo.
 ```
 src/bike_rental/
 ├── shared/          # value objects transversales (Money, ids)
-├── bicycle/         # entidad Bicycle, Station + estados
+├── inventory/       # Inventario & Ubicación: Bicycle, Station + estados (ADR-0008)
 ├── fare/            # Fare (versionada, snapshot RN-08)
 ├── payment/         # Payment + idempotencia (RN-20)
 ├── rental/
