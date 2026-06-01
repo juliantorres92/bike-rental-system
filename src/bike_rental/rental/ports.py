@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Sequence, Set
 
-from ..bicycle.entities import Bicycle, Station
+from ..inventory.entities import Bicycle, Station
 from ..payment.entities import Payment
 from ..shared.ids import (
     BicycleId,

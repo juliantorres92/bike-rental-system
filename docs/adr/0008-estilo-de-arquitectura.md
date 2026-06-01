@@ -26,6 +26,8 @@ Hay que elegir el estilo arquitectónico del sistema. La decisión condiciona lo
 
 **Opción 3: monolito modular con arquitectura hexagonal.** Módulos de dominio: Rentas, Inventario & Ubicación, Tarifas, Pagos. Infraestructura (BD, pasarela, reloj) entra por puertos con adaptadores intercambiables.
 
+> **Trazabilidad código ↔ módulo:** Rentas → `rental/`, Inventario & Ubicación → `inventory/` (contiene `Bicycle` y `Station`), Tarifas → `fare/`, Pagos → `payment/`. El módulo de inventario se renombró de `bicycle/` a `inventory/` para alinear el nombre con su responsabilidad (ver [PRD-0001](../prd/0001-rename-modulo-bicycle-a-inventory.md)).
+
 ## Consecuencias
 
 **Positivas**

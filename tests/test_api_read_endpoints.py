@@ -21,7 +21,7 @@ pytest.importorskip("httpx")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from bike_rental.adapters.api import InMemoryWorld, create_app  # noqa: E402
-from bike_rental.bicycle.enums import BicycleStatus  # noqa: E402
+from bike_rental.inventory.enums import BicycleStatus  # noqa: E402
 from bike_rental.rental.enums import RentalItemStatus, RentalStatus  # noqa: E402
 
 
@@ -111,7 +111,7 @@ def test_hu11_available_filter_returns_only_available_bikes():
     world = InMemoryWorld(bicycle_count=2)
     # Seed a MANTENIMIENTO bike physically at the station (not available) by
     # mutating the in-memory store directly (test setup, not via the API).
-    from bike_rental.bicycle.entities import Bicycle  # noqa: E402
+    from bike_rental.inventory.entities import Bicycle  # noqa: E402
     from bike_rental.shared.ids import BicycleId  # noqa: E402
 
     maint_id = BicycleId(uuid4())

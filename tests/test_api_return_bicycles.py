@@ -204,7 +204,7 @@ def test_tc16_api_station_full_409():
     rental_id = _create_rental(world, client)
     world.clock.advance(timedelta(minutes=5))
 
-    from bike_rental.bicycle.entities import Station  # noqa: E402
+    from bike_rental.inventory.entities import Station  # noqa: E402
     from bike_rental.shared.ids import StationId  # noqa: E402
 
     full_id = StationId(uuid4())

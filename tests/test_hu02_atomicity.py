@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from tests.conftest import REJECT, build_wiring, make_bicycle, make_fare, make_station
-from bike_rental.bicycle.enums import BicycleStatus
+from bike_rental.inventory.enums import BicycleStatus
 from bike_rental.rental.enums import RentalStatus
 from bike_rental.rental.errors import (
     BicycleNotAvailableError,
